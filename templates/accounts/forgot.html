@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Forgot Password{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0 rounded-3">
+                <div class="card-body p-5">
+                    <h3 class="mb-4 text-center fw-bold text-dark">Forgot Password</h3>
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} border-0 rounded-3 mb-4">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" autocomplete="off">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="email" class="form-label fw-semibold text-dark mb-2">
+                                Email Address
+                            </label>
+                            <input 
+                                type="email" 
+                                class="form-control form-control-lg border-2 rounded-3 px-3 py-3" 
+                                id="email" 
+                                name="email" 
+                                placeholder="Enter your email address" 
+                                value="{{ user_email }}" 
+                                required
+                                style="font-size: 1rem; line-height: 1.5; min-height: 50px;"
+                            >
+                        </div>
+                        
+                        <button 
+                            type="submit" 
+                            class="btn btn-primary btn-lg w-100 rounded-3 py-3 fw-semibold"
+                            style="font-size: 1.1rem;"
+                        >
+                            Send OTP
+                        </button>
+                    </form>
+                    
+                    {% if otp_sent %}
+                        <div class="mt-4 alert alert-info border-0 rounded-3 text-center py-3">
+                            <i class="bi bi-envelope-check me-2"></i>
+                            An OTP has been sent to <strong>{{ email }}</strong>. Please check your inbox.
+                        </div>
+                    {% endif %}
+                    
+                    <div class="text-center mt-4">
+                        <a href="{% url 'user:login' %}" class="text-decoration-none">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            Back to Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom styles for better form field appearance */
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+.form-control-lg {
+    transition: all 0.3s ease;
+}
+
+.form-control-lg:hover {
+    border-color: #86b7fe;
+}
+
+.btn-primary {
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+.card {
+    transition: transform 0.3s ease;
+}
+
+.alert {
+    font-weight: 500;
+}
+
+/* Ensure proper spacing and sizing */
+.form-label {
+    margin-bottom: 0.75rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .card-body {
+        padding: 2rem !important;
+    }
+    
+    .form-control-lg {
+        font-size: 0.95rem;
+        min-height: 45px;
+    }
+    
+    .btn-lg {
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}

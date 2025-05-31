@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}About Us{% endblock %}
+{% block content %}
+<section class="about-section py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-8 text-center">
+        <h1 class="mb-4">About Job Board</h1>
+        <p class="lead mb-4">
+          Welcome to <strong>Job Board</strong>! Our platform connects talented job seekers with top employers, making the job search and hiring process simple, efficient, and effective.
+        </p>
+        <hr class="my-4">
+        <h3>Our Mission</h3>
+        <p>
+          To empower individuals to find meaningful employment and help companies discover the best talent for their teams. We strive to create a user-friendly experience for both applicants and employers.
+        </p>
+        <h3>What We Offer</h3>
+        <ul class="list-unstyled mb-4">
+          <li>• Easy job search and application process</li>
+          <li>• Company profiles and job postings</li>
+          <li>• Candidate profiles and resume uploads</li>
+          <li>• Notifications and application tracking</li>
+        </ul>
+        <h3>Contact Us</h3>
+        <p>
+          Have questions or feedback? <a href="{% url 'user:contact' %}">Contact us</a> and we’ll be happy to help!
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
