@@ -64,8 +64,9 @@
         </div>
         <div class="col-sm-6">
             <div class="form-group">
-                <!-- Pre-fill the email input with the logged-in user's email -->
-                <input class="form-control valid" name="email" id="email" type="email" value="{{ user_email }}" readonly>
+                <input class="form-control valid" name="email" id="email" type="email" 
+                    value="{% if request.user.is_authenticated %}{{ request.user.email }}{% endif %}" 
+                    {% if request.user.is_authenticated %}readonly{% endif %}>
             </div>
         </div>
    

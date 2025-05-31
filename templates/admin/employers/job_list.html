@@ -55,8 +55,11 @@
                                 {{ job.title }}</a></td>
                             <td>{{ job.creation_date }}</td>
                             <td>
-                                <a href="/edit_job/{{ job.id }}/" class="btn  btn-outline-primary"><i class="bi bi-edit"></i> Edit</a>
+                                <a href="{% url 'user:edit_job' job.id %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-edit"></i> Edit
+                                </a>
                             </td>
+
                             <td>
                                 <form method="POST" action="{% url 'user:delete_job' job.id %}">
                                     {% csrf_token %}

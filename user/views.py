@@ -12,13 +12,14 @@ from datetime import timedelta
 from django.utils.timezone import now
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import login_required
 from .tasks import send_contact_email_task 
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.conf import settings
 from .models import Applicant,Company,Job,Application,Notification
- 
+
 def login_user(request): 
     if request.user.is_authenticated:
         return redirect("/")
@@ -201,29 +202,29 @@ def home(request):
 
 
 def contact(request):
-    user_email = request.user.email if request.user.is_authenticated else ''
     if request.method == 'POST':
-        subject = request.POST.get('subject', '')
-        message = request.POST.get('message', '')
-        name = request.POST.get('name', '')
-        email = request.POST.get('email', '')
-        if not subject or not message or not name or not email:
-            messages.error(request, 'All fields are required.')
-            return render(request, 'contact.html', {'user_email': user_email})
-        # You can use send_mail or EmailMessage here
-        try:
-            send_mail(
-                f"Contact Form: {subject}",
-                f"From: {name} <{email}>\n\n{message}",
-                email,
-                [settings.DEFAULT_FROM_EMAIL],
-                fail_silently=False,
-            )
-            messages.success(request, 'Your message has been sent successfully!')
-        except Exception as e:
-            messages.error(request, 'There was an error sending your message. Please try again later.')
-        return render(request, 'contact.html', {'user_email': user_email})
-    return render(request, 'contact.html', {'user_email': user_email})
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+        email = request.POST.get('email')
+        name = request.POST.get('name')
+        
+        if not all([subject, message, email]):
+            messages.error(request, 'All fields are required')
+            return redirect('user:contact')
+        
+        full_message = f"From: {name}\nEmail: {email}\n\n{message}"
+        
+        # Call the task with all required arguments
+        send_contact_email_task.delay(
+            subject=subject,
+            message=full_message,
+            from_email=email
+        )
+        
+        messages.success(request, 'Your message has been sent!')
+        return redirect('user:contact')
+    
+    return render(request, 'contact.html')
 
 def candidates(request):
     candidates = Applicant.objects.all()
@@ -469,10 +470,16 @@ def delete_applicant(request, id):
 
  
 
+@login_required
 def delete_account(request):
-    #write your code here
-        pass
-
+    if request.method == 'POST':
+        user = request.user
+        user.delete()
+        messages.success(request, 'Your account has been deleted.')
+        return redirect('user:login')  # Or home page if you prefer
+    else:
+        # Show confirmation page or redirect
+        return render(request, 'accounts/confirm_delete.html')
  #company 
 
 def company_homepage(request):
@@ -557,9 +564,35 @@ def add_job(request):
 
 
 
+@login_required
 def edit_job(request, myid):
-    #write your code here
-        pass
+    job = get_object_or_404(Job, id=myid)
+
+    if request.user != job.company.user:
+        messages.error(request, "You are not authorized to edit this job.")
+        return redirect('job_list')
+
+    if request.method == "POST":
+        job.title = request.POST.get('job_title')
+        job.start_date = request.POST.get('start_date') or job.start_date
+        job.end_date = request.POST.get('end_date') or job.end_date
+        job.salary = request.POST.get('salary')
+        job.experience = request.POST.get('experience')
+        job.location = request.POST.get('location')
+        job.skills = request.POST.get('skills')
+        job.description = request.POST.get('description')
+        job.job_type = request.POST.get('job-Type')
+        job.work_location = request.POST.get('Work-location')
+
+        if 'logo' in request.FILES:
+            job.image = request.FILES['logo']
+
+        job.save()
+        messages.success(request, "Job updated successfully.")
+        return redirect('user:job_detail', myid=job.id)
+
+    return render(request, "admin/employers/edit_job.html", {'job': job})
+
 
 
 def job_details(request, myid):
@@ -620,16 +653,8 @@ def user_homepage(request):
     # Fetch unread notifications for the logged-in user
     notifications = Notification.objects.filter(user=request.user, is_read=False).order_by('-created_at')
 
-    applied_jobs_count = 0
-    try:
-        applicant = Applicant.objects.get(user=request.user)
-        applied_jobs_count = Application.objects.filter(applicant=applicant).count()
-    except Applicant.DoesNotExist:
-        pass
-
     return render(request, "admin/candidates/user_homepage.html", {
         'notifications': notifications,
-        'applied_jobs_count': applied_jobs_count,
     })
 
 
@@ -653,7 +678,7 @@ def user_profile(request):
     if request.method=="POST":   
         email = request.POST['email']
         first_name=request.POST['first_name']
-        last_name = request.POST['last_name']
+        last_name=request.POST['last_name']
         phone = request.POST['phone']
         gender = request.POST['gender']
         work = request.POST['work']
@@ -752,28 +777,4 @@ def about(request):
     return render(request,'about.html')
 
 def forgot_password(request):
-    from random import randint
-    from django.core.cache import cache
-    user_email = ''
-    if request.method == 'POST':
-        email = request.POST.get('email', '').strip()
-        user_email = email
-        if not email:
-            messages.error(request, 'Please enter your email address.')
-            return render(request, 'accounts/forgot.html', {'user_email': user_email})
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            messages.error(request, 'No user found with this email address.')
-            return render(request, 'accounts/forgot.html', {'user_email': user_email})
-        # Generate OTP
-        otp = randint(100000, 999999)
-        cache.set(f'otp_{email}', otp, timeout=300)  # 5 minutes
-        # Send OTP using celery task
-        from .tasks import send_contact_email_task
-        subject = 'Password Reset OTP'
-        message = f'Your OTP for password reset is: {otp}'
-        send_contact_email_task.delay(subject, message, email)
-        messages.success(request, 'An OTP has been sent to your email. Please check your inbox.')
-        return render(request, 'accounts/forgot.html', {'user_email': user_email, 'otp_sent': True, 'email': email})
-    return render(request, 'accounts/forgot.html', {'user_email': user_email})
+    return render(request,'accounts/forgot.html')
