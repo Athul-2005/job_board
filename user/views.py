@@ -720,7 +720,7 @@ def user_profile(request):
 
         
         messages.success(request, 'Your form was successfully submitted!') 
-        return redirect('user_profile')  
+        return redirect('user:user_profile')  
 
     
     return render(request, "admin/candidates/user_profile.html", {'applicant':applicant})
